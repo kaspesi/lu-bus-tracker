@@ -5,7 +5,7 @@ Creates two cvs files for Packard Express, and Campus Connector
 * pe.csv
 * cc.csv
 
-` CSV HEADERS: [FleetNum, Key, Time, TimeStamp, Speed, Direction, Lat, Long, lastStop, currStop] `
+` CSV HEADERS: [FleetNum, Key, Time, TimeStamp, Speed, Direction, Lat, Long, lastStop, currStop, currDate] `
 
 `
 
@@ -20,6 +20,7 @@ Creates two cvs files for Packard Express, and Campus Connector
         {id: 'long', title: 'Long'},
         {id: 'lastStop', title: 'lastStop'},
         {id: 'currStop', title: 'currStop'},
+        {id: 'currDate', title: 'currDate'},
     ]
 
 
