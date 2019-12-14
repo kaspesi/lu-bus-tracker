@@ -14,10 +14,13 @@ pe <- read.csv("pe.csv",col.names = c("Id","Type","Time","Timestamp","Speed","He
 
 pe$Id <- NULL
 pe$Type <- NULL
-pe$Timestamp <- NULL
+#pe$Timestamp <- NULL
 pe$Speed <- NULL
 pe$Heading <- NULL
 pe$Atstop <- FALSE
+pe$TimeDifference <- 0
+pe$IntervalTime <- 0
+pe$TimeToNext <- 0
 pe$Date <- strtrim(pe$Date, 10)
 pe <- unique(pe)
 pe <- pe[(pe$Latitude != 0),]
@@ -26,52 +29,87 @@ pe11020 <- pe
 
 previous_prev <- NULL
 previous_curr <- NULL
+previous_time <- NULL
 current_prev <- pe11020[1,]$LastStop
 current_curr <- pe11020[1,]$CurrentStop
+current_time <- pe11020[1,]$Timestamp
+cummTime <- 0
 for (row in 2:nrow(pe11020)) {
-    
     previous_prev <- current_prev
     previous_curr <- current_curr
+    previous_time <- current_time
     current_prev <- pe11020[row, "LastStop"]
     current_curr <- pe11020[row, "CurrentStop"]
+    current_time <- pe11020[row, "Timestamp"]
+    current_diff <- current_time - previous_time;
+    cummTime <- cummTime + current_diff;
+    pe11020[row, "TimeDifference"] <- cummTime
     
     if(is.na(previous_curr)  && !is.na(current_curr)) {
       pe11020[row,"Atstop"] <- TRUE
+      cummTime <- 0
+    } else if(!is.na(previous_curr) && !identical(previous_curr, current_curr) && !is.na(current_curr)){
+      pe11020[row,"Atstop"] <- TRUE
+      cummTime <- 0
     }
-
 }
+
+foundFirst <- FALSE
+intervalDuration = 0;
+for(row in nrow(pe11020):1){
+  if(!foundFirst && pe11020[row,"Atstop"]){
+    foundFirst <- TRUE
+    intervalDuration <- pe11020[row,"TimeDifference"]
+  } 
+  if(foundFirst && pe11020[row,"Atstop"]){
+    intervalDuration <- pe11020[row,"TimeDifference"]
+  } 
+  if(foundFirst) {
+    pe11020[row, "IntervalTime"] <- intervalDuration
+  }
+}
+
+for (row in 1:nrow(pe11020)) {
+  current_time <- pe11020[row,"TimeDifference"]
+  next_stop_time <- pe11020[row,"IntervalTime"]
+  time_to_next <- next_stop_time - current_time
+  if(next_stop_time != 0){
+    pe11020[row, "TimeToNext"] <- time_to_next
+  }
+}
+
 
 #CLEANING AND SPLITTING CC.CSV
 
-cc <- read.csv("cc.csv",col.names = c("Id","Type","Time","Timestamp","Speed","Heading","Latitude","Longitude","Last Stop","Current Stop","Date"), row.names = NULL)
+#cc <- read.csv("cc.csv",col.names = c("Id","Type","Time","Timestamp","Speed","Heading","Latitude","Longitude","Last Stop","Current Stop","Date"), row.names = NULL)
 
-cc$Type <- NULL
-cc$Timestamp <- NULL
-cc$Speed <- NULL
-cc$Heading <- NULL
-cc$Date <- strtrim(cc$Date, 10)
-cc <- unique(cc)
-cc <- cc[(cc$Latitude != 0),]
+#cc$Type <- NULL
+#cc$Timestamp <- NULL
+#cc$Speed <- NULL
+#cc$Heading <- NULL
+#cc$Date <- strtrim(cc$Date, 10)
+#cc <- unique(cc)
+#cc <- cc[(cc$Latitude != 0),]
 
-cc9991 <- cc[which(cc$Id == 9991),]
-cc9991$Id <- NULL
-cc9992 <- cc[which(cc$Id == 9992),]
-cc9992$Id <- NULL
-cc10072 <- cc[which(cc$Id == 10072),]
-cc10072$Id <- NULL
-cc11010 <- cc[which(cc$Id == 11010),]
-cc11010$Id <- NULL
-cc11070 <- cc[which(cc$Id == 11070),]
-cc11070$Id <- NULL
+#cc9991 <- cc[which(cc$Id == 9991),]
+#cc9991$Id <- NULL
+#cc9992 <- cc[which(cc$Id == 9992),]
+#cc9992$Id <- NULL
+#cc10072 <- cc[which(cc$Id == 10072),]
+#cc10072$Id <- NULL
+#cc11010 <- cc[which(cc$Id == 11010),]
+#cc11010$Id <- NULL
+#cc11070 <- cc[which(cc$Id == 11070),]
+#cc11070$Id <- NULL
 
 #WRITING OUT CLEANED CSVS
 
-write.csv(pe11020,file="pe11020.csv")
-write.csv(cc9991,file="cc9991.csv")
-write.csv(cc9992,file="cc9992.csv")
-write.csv(cc10072,file="cc10072.csv")
-write.csv(cc11010,file="cc11010.csv")
-write.csv(cc11070,file="cc11070.csv")
+#write.csv(pe11020,file="pe11020.csv")
+#write.csv(cc9991,file="cc9991.csv")
+#write.csv(cc9992,file="cc9992.csv")
+#write.csv(cc10072,file="cc10072.csv")
+#write.csv(cc11010,file="cc11010.csv")
+#write.csv(cc11070,file="cc11070.csv")
 
 
 
