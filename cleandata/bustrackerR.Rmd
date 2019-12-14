@@ -10,17 +10,36 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 ```{r}
 #CLEANING PE.CSV
 
-pe <- read.csv("pe.csv",col.names = c("Id","Type","Time","Timestamp","Speed","Heading","Latitude","Longitude","Last Stop","Current Stop","Date"), row.names = NULL)
+pe <- read.csv("pe.csv",col.names = c("Id","Type","Time","Timestamp","Speed","Heading","Latitude","Longitude","LastStop","CurrentStop","Date"), row.names = NULL, na.strings=c("NA","NaN", " ",""))
 
 pe$Id <- NULL
 pe$Type <- NULL
 pe$Timestamp <- NULL
 pe$Speed <- NULL
 pe$Heading <- NULL
+pe$Atstop <- FALSE
 pe$Date <- strtrim(pe$Date, 10)
 pe <- unique(pe)
 pe <- pe[(pe$Latitude != 0),]
 pe11020 <- pe
+
+
+previous_prev <- NULL
+previous_curr <- NULL
+current_prev <- pe11020[1,]$LastStop
+current_curr <- pe11020[1,]$CurrentStop
+for (row in 2:nrow(pe11020)) {
+    
+    previous_prev <- current_prev
+    previous_curr <- current_curr
+    current_prev <- pe11020[row, "LastStop"]
+    current_curr <- pe11020[row, "CurrentStop"]
+    
+    if(is.na(previous_curr)  && !is.na(current_curr)) {
+      pe11020[row,"Atstop"] <- TRUE
+    }
+
+}
 
 #CLEANING AND SPLITTING CC.CSV
 
