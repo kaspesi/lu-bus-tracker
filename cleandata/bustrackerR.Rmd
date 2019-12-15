@@ -9,22 +9,25 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 
 ```{r}
 #CLEANING PE.CSV
+library(chron)
 
-pe <- read.csv("pe.csv",col.names = c("Id","Type","Time","Timestamp","Speed","Heading","Latitude","Longitude","LastStop","CurrentStop","Date"), row.names = NULL, na.strings=c("NA","NaN", " ",""))
+pe <- read.csv("pe.csv",col.names = c("Id","Type","Time","Timestamp","Speed","Heading","Latitude","Longitude","LastStop","CurrentStop","Date"), row.names = NULL, na.strings=c("NA","NaN"," ",""), stringsAsFactors = FALSE)
 
 pe$Id <- NULL
 pe$Type <- NULL
 #pe$Timestamp <- NULL
 pe$Speed <- NULL
-pe$Heading <- NULL
+#pe$Heading <- NULL
 pe$Atstop <- FALSE
 pe$TimeDifference <- 0
 pe$IntervalTime <- 0
 pe$TimeToNext <- 0
-pe$Date <- strtrim(pe$Date, 10)
+#pe$Date <- strtrim(pe$Date, 10)
+pe$Date <- time(pe$Date)
 pe <- unique(pe)
 pe <- pe[(pe$Latitude != 0),]
 pe11020 <- pe
+
 
 
 previous_prev <- NULL
@@ -42,9 +45,13 @@ for (row in 2:nrow(pe11020)) {
     current_curr <- pe11020[row, "CurrentStop"]
     current_time <- pe11020[row, "Timestamp"]
     current_diff <- current_time - previous_time;
-    cummTime <- cummTime + current_diff;
-    pe11020[row, "TimeDifference"] <- cummTime
     
+    pe11020[row, "TimeDifference"] <- cummTime
+    if(current_time - previous_time < 1000){
+      cummTime <- cummTime + current_diff;
+    } else {
+      cummTime <- 0
+    }
     if(is.na(previous_curr)  && !is.na(current_curr)) {
       pe11020[row,"Atstop"] <- TRUE
       cummTime <- 0
@@ -78,6 +85,24 @@ for (row in 1:nrow(pe11020)) {
   }
 }
 
+current_prev <- NULL
+prev_prev <- NULL
+for (row in 1:nrow(pe11020)) {
+    prev_prev <- current_prev
+    current_prev <- pe11020[row, "LastStop"]
+    current_curr <- pe11020[row, "CurrentStop"]
+    
+    if(pe11020[row, "Atstop"] && (is.na(current_prev)  || identical(current_prev, "NA"))&& !is.na(current_curr)) {
+      pe11020[row,"LastStop"] <- prev_prev
+    } else if(is.na(current_prev)  && !is.na(current_curr)) {
+      pe11020[row,"LastStop"] <- current_curr
+    }
+    
+    if(is.na(pe11020[row, "LastStop"])){
+      pe11020[row, "LastStop"] <- current_curr
+    }
+
+}
 
 #CLEANING AND SPLITTING CC.CSV
 
@@ -115,7 +140,26 @@ for (row in 1:nrow(pe11020)) {
 
 ```
 
+
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+```{r}
+colnames(pe11020)
+require(caTools)
+set.seed(123)
+sample = sample.split(pe11020, SplitRatio = .8);
+pe_train = subset(pe11020, sample == TRUE)
+pe_test = subset(pe11020, sample == FALSE)
+linearMod <- lm(TimeToNext ~ LastStop*(Timestamp+Latitude+Longitude+Heading), data=pe11020)
+summary(linearMod)
+distPred <- predict(linearMod, pe_test) 
+#distPred
+#distPred
+#cbind(pe_test,distPred)
+#result<-data.frame(distPred)
+pe_test$result <- distPred
+pe_test
+
+```
 
 When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
 
