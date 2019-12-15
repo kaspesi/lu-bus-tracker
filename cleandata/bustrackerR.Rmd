@@ -9,7 +9,7 @@ Try executing this chunk by clicking the *Run* button within the chunk or by pla
 
 ```{r}
 #CLEANING PE.CSV
-library(chron)
+
 
 pe <- read.csv("pe.csv",col.names = c("Id","Type","Time","Timestamp","Speed","Heading","Latitude","Longitude","LastStop","CurrentStop","Date"), row.names = NULL, na.strings=c("NA","NaN"," ",""), stringsAsFactors = FALSE)
 
@@ -22,8 +22,7 @@ pe$Atstop <- FALSE
 pe$TimeDifference <- 0
 pe$IntervalTime <- 0
 pe$TimeToNext <- 0
-#pe$Date <- strtrim(pe$Date, 10)
-pe$Date <- time(pe$Date)
+pe$Date <- strtrim(pe$Date, 10)
 pe <- unique(pe)
 pe <- pe[(pe$Latitude != 0),]
 pe11020 <- pe
@@ -101,6 +100,10 @@ for (row in 1:nrow(pe11020)) {
     if(is.na(pe11020[row, "LastStop"])){
       pe11020[row, "LastStop"] <- current_curr
     }
+    
+    if(is.na(pe11020[row, "CurrentStop"]) || identical(current_prev, "NA")){
+      pe11020[row, "CurrentStop"] <- "In-Transit"
+    }
 
 }
 
@@ -145,11 +148,11 @@ Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by press
 ```{r}
 colnames(pe11020)
 require(caTools)
-set.seed(123)
+set.seed(250)
 sample = sample.split(pe11020, SplitRatio = .8);
 pe_train = subset(pe11020, sample == TRUE)
 pe_test = subset(pe11020, sample == FALSE)
-linearMod <- lm(TimeToNext ~ LastStop*(Timestamp+Latitude+Longitude+Heading), data=pe11020)
+linearMod <- lm(TimeToNext ~ (CurrentStop+LastStop)*(Timestamp+Latitude+Longitude+Heading), data=pe11020)
 summary(linearMod)
 distPred <- predict(linearMod, pe_test) 
 #distPred
